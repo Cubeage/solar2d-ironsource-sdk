@@ -10,7 +10,7 @@ on:
 
 jobs:
   jvm-tests:
-    runs-on: sylphx-linux-standard
+    runs-on: ${{ github.event_name == 'merge_group' && 'sylphx-linux-standard-merge' || 'sylphx-linux-standard' }}
 
     steps:
       - name: Checkout
@@ -28,12 +28,23 @@ jobs:
       - name: Run JVM regression tests
         run: bash tests/jvm/run.sh
 
-  # Aggregate gate: the merge queue requires only this check. Skipped jobs pass;
+  chat-senders:
+    runs-on: ${{ github.event_name == 'merge_group' && 'sylphx-linux-standard-merge' || 'sylphx-linux-standard' }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: SylphxAI/.github/.github/actions/chat-senders@5cfd55a41435cca8e4b7caf6506faf04ca08d200
+        with:
+          mode: fail
+
+  # Aggregate gate required on pull requests and merge groups. Skipped jobs pass;
   # a failed or cancelled gating job fails it.
-  ci-ok:
+  fast-gate:
     if: always()
-    needs: [jvm-tests]
-    runs-on: sylphx-linux-standard
+    needs: [jvm-tests, chat-senders]
+    runs-on: ${{ github.event_name == 'merge_group' && 'sylphx-linux-standard-merge' || 'sylphx-linux-standard' }}
     timeout-minutes: 5
     steps:
       - name: All gating jobs passed
