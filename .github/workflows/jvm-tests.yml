@@ -1,12 +1,26 @@
-name: JVM Tests
+name: CI
 
+# The `fast-gate` aggregate is the single required status check on pull requests
+# and merge groups (ruleset required-fast-gate). This repository is public, so
+# the repository ruleset that requires it applies to the default branch only.
+#
+# `push: main` re-runs the JVM regression suite after a merge. The chat-senders
+# job is deliberately limited to pull requests and merge groups: it inspects the
+# lines a change adds, which main's own merge commit repeats, and the pinned
+# action reads a merge-group diff from the merge-group base and head.
 on:
   merge_group:
   push:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
-  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   jvm-tests:
@@ -14,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -28,19 +42,24 @@ jobs:
       - name: Run JVM regression tests
         run: bash tests/jvm/run.sh
 
+  # A change may not add a direct chat-API host (Telegram, Slack, Discord)
+  # outside the allow-list the shared action owns: chat goes through Notify.
+  # Skipped outside pull requests and merge groups, where skipped jobs pass.
   chat-senders:
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ${{ github.event_name == 'merge_group' && 'sylphx-linux-standard-merge' || 'sylphx-linux-standard' }}
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-      - uses: SylphxAI/.github/.github/actions/chat-senders@5cfd55a41435cca8e4b7caf6506faf04ca08d200
+      - name: Added lines send chat through Notify
+        uses: SylphxAI/.github/.github/actions/chat-senders@5cfd55a41435cca8e4b7caf6506faf04ca08d200
         with:
           mode: fail
 
-  # Aggregate gate required on pull requests and merge groups. Skipped jobs pass;
-  # a failed or cancelled gating job fails it.
+  # The required check. Skipped jobs pass; a failed or cancelled gating job fails it.
   fast-gate:
     if: always()
     needs: [jvm-tests, chat-senders]
