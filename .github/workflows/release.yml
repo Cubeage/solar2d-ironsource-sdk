@@ -8,31 +8,42 @@ on:
 jobs:
   build-android:
     uses: ./.github/workflows/build-android.yml
+    permissions:
+      contents: read
+      id-token: write
 
   build-ios:
     uses: ./.github/workflows/build-ios.yml
+    permissions:
+      contents: read
+      id-token: write
 
   release:
     needs: [ build-android, build-ios ]
     runs-on: sylphx-linux-standard
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Android artifact
-        uses: actions/download-artifact@v4
+      - name: run-store get android-plugin
+        uses: SylphxAI/.github/.github/actions/run-store@90d88da2d60dcd6a3884899c273dd3a7f975be17
         with:
+          mode: get
           name: android-plugin
           path: release-artifacts
+          required: "true"
 
-      - name: Download iOS artifact
-        uses: actions/download-artifact@v4
+      - name: run-store get ios-plugin
+        uses: SylphxAI/.github/.github/actions/run-store@90d88da2d60dcd6a3884899c273dd3a7f975be17
         with:
+          mode: get
           name: ios-plugin
           path: release-artifacts
+          required: "true"
 
       - name: List artifacts
         run: ls -la release-artifacts/
