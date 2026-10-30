@@ -28,9 +28,9 @@ jobs:
       - name: Run JVM regression tests
         run: bash tests/jvm/run.sh
 
-  # Aggregate gate: the merge queue requires only this check. Skipped jobs pass;
+  # Required aggregate check. Skipped jobs pass;
   # a failed or cancelled gating job fails it.
-  ci-ok:
+  fast-gate:
     if: always()
     needs: [jvm-tests]
     runs-on: sylphx-linux-standard
