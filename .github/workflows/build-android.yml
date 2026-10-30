@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: sylphx-linux-standard
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout
@@ -91,8 +94,10 @@ jobs:
           echo "android.tgz contents:"
           tar tzf ../android.tgz
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: run-store put android-plugin
+        uses: SylphxAI/.github/.github/actions/run-store@90d88da2d60dcd6a3884899c273dd3a7f975be17
         with:
+          mode: put
           name: android-plugin
           path: android.tgz
+          required: "true"
