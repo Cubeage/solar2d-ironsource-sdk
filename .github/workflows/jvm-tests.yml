@@ -10,7 +10,7 @@ on:
 
 jobs:
   jvm-tests:
-    runs-on: sylphx-linux-standard
+    runs-on: ${{ github.event_name == 'merge_group' && 'sylphx-linux-standard-merge' || 'sylphx-linux-standard' }}
 
     steps:
       - name: Checkout
@@ -33,7 +33,7 @@ jobs:
   fast-gate:
     if: always()
     needs: [jvm-tests]
-    runs-on: sylphx-linux-standard
+    runs-on: ${{ github.event_name == 'merge_group' && 'sylphx-linux-standard-merge' || 'sylphx-linux-standard' }}
     timeout-minutes: 5
     steps:
       - name: All gating jobs passed

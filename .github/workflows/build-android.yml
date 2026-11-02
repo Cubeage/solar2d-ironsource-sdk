@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: sylphx-linux-standard
+    runs-on: sylphx-linux-standard-merge
     permissions:
       contents: read
       id-token: write
